@@ -18,5 +18,10 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(x => x.LastName).IsRequired().HasMaxLength(100);
         builder.Property(x => x.Email).IsRequired().HasMaxLength(150);
         builder.Property(x => x.Status).HasMaxLength(20);
+
+        builder.HasOne(x => x.Advisor)
+               .WithMany(x => x.Students)
+               .HasForeignKey(x => x.AdvisorId)
+               .OnDelete(DeleteBehavior.SetNull);
     }
 }

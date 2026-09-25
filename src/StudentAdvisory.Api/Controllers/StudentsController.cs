@@ -40,4 +40,19 @@ public class StudentsController : ControllerBase
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
     }
+
+    [HttpPost("{studentId}/assign-advisor/{advisorId}")]
+    public async Task<IActionResult> AssignAdvisor(Guid studentId, Guid advisorId)
+    {
+        var student = await _context.Students.FindAsync(studentId);
+        if (student == null) return NotFound("Student not found");
+
+        var advisor = await _context.Advisors.FindAsync(advisorId);
+        if (advisor == null) return NotFound("Advisor not found");
+
+        student.AdvisorId = advisorId;
+        await _context.SaveChangesAsync();
+
+        return Ok(student);
+    }
 }

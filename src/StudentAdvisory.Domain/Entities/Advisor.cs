@@ -11,4 +11,5 @@ public class Advisor : BaseEntity
     public Guid? DepartmentId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string OfficeLocation { get; set; } = string.Empty;
+    public ICollection<Student> Students { get; set; } = new List<Student>();
 }

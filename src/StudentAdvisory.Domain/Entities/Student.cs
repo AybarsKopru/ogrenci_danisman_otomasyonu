@@ -10,4 +10,6 @@ public class Student : BaseEntity
     public string Email { get; set; } = string.Empty;
     public Guid? DepartmentId { get; set; }
     public string Status { get; set; } = "Active"; // Active, Graduated, Suspended vb.
+    public Guid? AdvisorId { get; set; }
+    public Advisor? Advisor { get; set; }
 }
