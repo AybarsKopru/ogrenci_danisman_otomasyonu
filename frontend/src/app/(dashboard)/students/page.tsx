@@ -1,12 +1,28 @@
-import { Search, Plus } from "lucide-react";
+"use client";
 
-const students = [
-  { id: 1, name: 'Ahmet Yılmaz', number: '2021001', department: 'Bilgisayar Müh.', status: 'Aktif' },
-  { id: 2, name: 'Ayşe Demir', number: '2021002', department: 'Yazılım Müh.', status: 'Aktif' },
-  { id: 3, name: 'Mehmet Kaya', number: '2021003', department: 'Endüstri Müh.', status: 'Mezun' },
-];
+import { useEffect, useState } from "react";
+import { Search, Plus, Loader2 } from "lucide-react";
+import { fetchApi } from "@/lib/api";
+
+type Student = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  studentNumber: string;
+  status: string;
+};
 
 export default function StudentsPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApi('/api/students')
+      .then(data => setStudents(data || []))
+      .catch(err => console.error("Error fetching students:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -36,36 +52,45 @@ export default function StudentsPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-slate-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Öğrenci No</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ad Soyad</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Bölüm</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Durum</th>
-                <th scope="col" className="relative px-6 py-3">
-                  <span className="sr-only">Düzenle</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {students.map((student) => (
-                <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-medium">{student.number}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">{student.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">{student.department}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`}>
-                      {student.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <a href="#" className="text-primary hover:text-primary/80">İncele</a>
-                  </td>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Öğrenci No</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ad Soyad</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Durum</th>
+                  <th scope="col" className="relative px-6 py-3">
+                    <span className="sr-only">Düzenle</span>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-card divide-y divide-border">
+                {students.map((student) => (
+                  <tr key={student.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-medium">{student.studentNumber}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">{student.firstName} {student.lastName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`}>
+                        {student.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <a href="#" className="text-primary hover:text-primary/80">İncele</a>
+                    </td>
+                  </tr>
+                ))}
+                {students.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">Kayıtlı öğrenci bulunamadı.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
