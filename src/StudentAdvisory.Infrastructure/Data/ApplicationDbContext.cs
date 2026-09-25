@@ -17,6 +17,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Advisor> Advisors { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Meeting> Meetings { get; set; }
+    public DbSet<Announcement> Announcements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
