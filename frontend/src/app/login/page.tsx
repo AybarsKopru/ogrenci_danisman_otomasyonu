@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2 } from "lucide-react";
+import { KeyRound, Loader2, Info } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 
 export default function LoginPage() {
@@ -31,10 +31,16 @@ export default function LoginPage() {
       }
     } catch (err) {
       setError("Sunucuya bağlanılamadı veya hatalı şifre.");
-      console.error(err);
+      // Development hatalarının Next.js overlay'e düşmemesi için console.error'u kaldırdık.
     } finally {
       setLoading(false);
     }
+  };
+
+  // Hızlı giriş için yardımcı fonksiyon
+  const fillDemoCredentials = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
   };
 
   return (
@@ -48,7 +54,7 @@ export default function LoginPage() {
             Giriş Yapın
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
-            Danışman portalına erişmek için bilgilerinizi girin.
+            Öğrenci ve Danışman portalına erişmek için bilgilerinizi girin.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
@@ -102,6 +108,36 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-slate-100">
+          <div className="flex items-center gap-2 mb-4">
+            <Info className="h-4 w-4 text-slate-400" />
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Test Hesapları (Tek tıkla doldur)</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            <button 
+              onClick={() => fillDemoCredentials('admin@uni.edu.tr', 'Admin123!')}
+              className="flex justify-between items-center px-3 py-2 text-xs text-left bg-slate-50 hover:bg-primary/5 rounded border border-slate-200 transition-colors"
+            >
+              <span className="font-semibold text-slate-700">Admin</span>
+              <span className="text-slate-500 font-mono">admin@uni.edu.tr</span>
+            </button>
+            <button 
+              onClick={() => fillDemoCredentials('danisman@uni.edu.tr', 'Advisor123!')}
+              className="flex justify-between items-center px-3 py-2 text-xs text-left bg-slate-50 hover:bg-primary/5 rounded border border-slate-200 transition-colors"
+            >
+              <span className="font-semibold text-slate-700">Danışman</span>
+              <span className="text-slate-500 font-mono">danisman@uni.edu.tr</span>
+            </button>
+            <button 
+              onClick={() => fillDemoCredentials('ogrenci@uni.edu.tr', 'Student123!')}
+              className="flex justify-between items-center px-3 py-2 text-xs text-left bg-slate-50 hover:bg-primary/5 rounded border border-slate-200 transition-colors"
+            >
+              <span className="font-semibold text-slate-700">Öğrenci</span>
+              <span className="text-slate-500 font-mono">ogrenci@uni.edu.tr</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

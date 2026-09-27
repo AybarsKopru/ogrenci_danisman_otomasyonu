@@ -46,7 +46,7 @@ public static class DbSeeder
                 {
                     Email = "danisman@uni.edu.tr",
                     FirstName = "Ahmet",
-                    LastName = "Hoca",
+                    LastName = "Yılmaz",
                     RegistrationNumber = "ADV-001",
                     Title = "Prof. Dr.",
                     OfficeLocation = "A Blok 101"
@@ -55,39 +55,58 @@ public static class DbSeeder
             }
         }
 
-        // Create Student
-        ApplicationUser? studentUser = await userManager.FindByEmailAsync("ogrenci@uni.edu.tr");
-        if (studentUser == null)
+        var advisor = dbContext.Advisors.FirstOrDefault();
+
+        // Create More Students
+        var mockStudents = new[]
         {
-            studentUser = new ApplicationUser { UserName = "ogrenci@uni.edu.tr", Email = "ogrenci@uni.edu.tr" };
-            await userManager.CreateAsync(studentUser, "Student123!");
-            await userManager.AddToRoleAsync(studentUser, "Student");
+            new { Email = "ogrenci@uni.edu.tr", FName = "Ali", LName = "Çalışkan", No = "20240001", Status = "Active" },
+            new { Email = "ayse@uni.edu.tr", FName = "Ayşe", LName = "Demir", No = "20240002", Status = "Active" },
+            new { Email = "mehmet@uni.edu.tr", FName = "Mehmet", LName = "Kaya", No = "20240003", Status = "Graduated" }
+        };
 
-            if (!dbContext.Students.Any(s => s.Email == "ogrenci@uni.edu.tr"))
+        foreach (var s in mockStudents)
+        {
+            if (await userManager.FindByEmailAsync(s.Email) == null)
             {
-                var advisor = dbContext.Advisors.FirstOrDefault();
-                var student = new Student
-                {
-                    Email = "ogrenci@uni.edu.tr",
-                    FirstName = "Ali",
-                    LastName = "Çalışkan",
-                    StudentNumber = "20240001",
-                    AdvisorId = advisor?.Id
-                };
-                dbContext.Students.Add(student);
-                await dbContext.SaveChangesAsync();
+                var user = new ApplicationUser { UserName = s.Email, Email = s.Email };
+                await userManager.CreateAsync(user, "Student123!");
+                await userManager.AddToRoleAsync(user, "Student");
 
-                if (advisor != null)
+                if (!dbContext.Students.Any(x => x.Email == s.Email))
                 {
-                    dbContext.Appointments.Add(new Appointment
+                    var student = new Student
                     {
-                        StudentId = student.Id,
-                        AdvisorId = advisor.Id,
-                        AppointmentDate = DateTime.UtcNow.AddDays(1),
-                        Status = "Pending",
-                        Notes = "Ders seçimi hakkında görüşmek istiyorum."
-                    });
+                        Email = s.Email,
+                        FirstName = s.FName,
+                        LastName = s.LName,
+                        StudentNumber = s.No,
+                        AdvisorId = advisor?.Id,
+                        Status = s.Status
+                    };
+                    dbContext.Students.Add(student);
                     await dbContext.SaveChangesAsync();
+
+                    if (advisor != null && s.Email == "ogrenci@uni.edu.tr")
+                    {
+                        dbContext.Appointments.Add(new Appointment
+                        {
+                            StudentId = student.Id,
+                            AdvisorId = advisor.Id,
+                            AppointmentDate = DateTime.UtcNow.AddDays(1),
+                            Status = "Pending",
+                            Notes = "Ders seçimi hakkında görüşmek istiyorum."
+                        });
+                        dbContext.Appointments.Add(new Appointment
+                        {
+                            StudentId = student.Id,
+                            AdvisorId = advisor.Id,
+                            AppointmentDate = DateTime.UtcNow.AddDays(-2),
+                            Status = "Approved",
+                            Notes = "Geçmiş staj onayı toplantısı."
+                        });
+                        await dbContext.SaveChangesAsync();
+                    }
                 }
             }
         }

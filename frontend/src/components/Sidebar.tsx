@@ -27,7 +27,7 @@ export default function Sidebar() {
     <div className="flex h-full w-64 flex-col border-r border-border bg-card">
       <div className="flex h-16 items-center px-6 border-b border-border">
         <div className="text-xl font-bold text-primary">
-          {user?.roles?.includes('Student') ? 'Öğrenci Portal' : 'Danışman Portal'}
+          {user?.roles?.includes('Student') ? 'Öğrenci Portal' : user?.roles?.includes('Advisor') ? 'Danışman Portal' : 'Admin Portal'}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto py-4">

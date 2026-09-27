@@ -16,7 +16,8 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!response.ok) {
-    throw new Error('API isteği başarısız oldu');
+    const errText = await response.text();
+    throw new Error(`API Hatası (${response.status}): ${errText}`);
   }
 
   // Empty responses (like 200 OK without body) shouldn't be parsed as JSON
