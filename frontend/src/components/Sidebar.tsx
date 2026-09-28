@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Calendar, Megaphone, Bell, BarChart3, Settings, BookOpen } from "lucide-react";
+import { Users, Calendar, Megaphone, Bell, BarChart3, Settings, BookOpen, Activity } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 
@@ -16,6 +16,7 @@ export default function Sidebar() {
     { name: 'Randevular', href: '/appointments', icon: Calendar, roles: ['Admin', 'Advisor', 'Student'] },
     { name: 'Duyurular', href: '/announcements', icon: Megaphone, roles: ['Admin', 'Advisor', 'Student'] },
     { name: 'Bildirimler', href: '/notifications', icon: Bell, roles: ['Admin', 'Advisor', 'Student'] },
+    { name: 'Sistem Logları', href: '/logs', icon: Activity, roles: ['Admin'] },
     { name: 'Ayarlar', href: '/settings', icon: Settings, roles: ['Admin', 'Advisor', 'Student'] },
   ];
 

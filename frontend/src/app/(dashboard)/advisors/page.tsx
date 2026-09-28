@@ -63,11 +63,12 @@ export default function AdvisorsPage() {
     e.preventDefault();
     if (!editingAdvisor) return;
     try {
-      const updated = await fetchApi(`/api/advisors/${editingAdvisor.id}`, {
+      const updatedAdvisor = { ...editingAdvisor, ...formData };
+      await fetchApi(`/api/advisors/${editingAdvisor.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ ...editingAdvisor, ...formData })
+        body: JSON.stringify(updatedAdvisor)
       });
-      setAdvisors(advisors.map(a => a.id === updated.id ? updated : a));
+      setAdvisors(advisors.map(a => a.id === updatedAdvisor.id ? updatedAdvisor : a));
       setIsEditModalOpen(false);
       setEditingAdvisor(null);
     } catch(err) {

@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Announcement> Announcements { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Department> Departments { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

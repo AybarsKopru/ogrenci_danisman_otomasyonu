@@ -64,15 +64,12 @@ export default function AnnouncementsPage() {
     e.preventDefault();
     if(!editingAnn) return;
     try {
-      const updated = await fetchApi(`/api/announcements/${editingAnn.id}`, {
+      const updatedAnn = { ...editingAnn, title: formData.title, content: formData.content };
+      await fetchApi(`/api/announcements/${editingAnn.id}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          ...editingAnn,
-          title: formData.title,
-          content: formData.content
-        })
+        body: JSON.stringify(updatedAnn)
       });
-      setAnnouncements(announcements.map(a => a.id === updated.id ? updated : a));
+      setAnnouncements(announcements.map(a => a.id === updatedAnn.id ? updatedAnn : a));
       setIsEditModalOpen(false);
       setEditingAnn(null);
     } catch(err) {

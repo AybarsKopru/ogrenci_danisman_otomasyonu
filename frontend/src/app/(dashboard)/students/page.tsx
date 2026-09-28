@@ -66,11 +66,12 @@ export default function StudentsPage() {
     e.preventDefault();
     if (!editingStudent) return;
     try {
-      const updated = await fetchApi(`/api/students/${editingStudent.id}`, {
+      const updatedStudent = { ...editingStudent, ...formData };
+      await fetchApi(`/api/students/${editingStudent.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ ...editingStudent, ...formData })
+        body: JSON.stringify(updatedStudent)
       });
-      setStudents(students.map(s => s.id === updated.id ? updated : s));
+      setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
       setIsEditModalOpen(false);
       setEditingStudent(null);
     } catch(err) {
