@@ -18,6 +18,7 @@ export default function StudentsPage() {
   const isAdmin = user?.roles?.includes('Admin');
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchApi('/api/students')
@@ -25,6 +26,11 @@ export default function StudentsPage() {
       .catch(err => console.error("Error fetching students:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  const filteredStudents = students.filter(s => 
+    `${s.firstName} ${s.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+    s.studentNumber.includes(search)
+  );
 
   return (
     <div className="space-y-6">
@@ -51,6 +57,8 @@ export default function StudentsPage() {
             </div>
             <input
               type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-border rounded-md leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
               placeholder="Öğrenci ara (İsim veya numara)..."
             />
@@ -74,7 +82,7 @@ export default function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-card divide-y divide-border">
-                {students.map((student) => (
+                {filteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-medium">{student.studentNumber}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">{student.firstName} {student.lastName}</td>
@@ -88,7 +96,7 @@ export default function StudentsPage() {
                     </td>
                   </tr>
                 ))}
-                {students.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">Kayıtlı öğrenci bulunamadı.</td>
                   </tr>
