@@ -27,13 +27,134 @@ export default function StudentsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', studentNumber: '', email: '', status: 'Active' });
+
   const filteredStudents = students.filter(s => 
     `${s.firstName} ${s.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
     s.studentNumber.includes(search)
   );
 
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const newStudent = await fetchApi('/api/students', {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+      setStudents([...students, newStudent]);
+      setIsModalOpen(false);
+      setFormData({ firstName: '', lastName: '', studentNumber: '', email: '', status: 'Active' });
+    } catch(err) {
+      alert('Öğrenci eklenemedi.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if(!confirm('Bu öğrenciyi silmek istediğinize emin misiniz?')) return;
+    try {
+      await fetchApi(`/api/students/${id}`, { method: 'DELETE' });
+      setStudents(students.filter(s => s.id !== id));
+    } catch(err) {
+      alert('Öğrenci silinemedi.');
+    }
+  };
+
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    try {
+      const updated = await fetchApi(`/api/students/${editingStudent.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ...editingStudent, ...formData })
+      });
+      setStudents(students.map(s => s.id === updated.id ? updated : s));
+      setIsEditModalOpen(false);
+      setEditingStudent(null);
+    } catch(err) {
+      alert('Öğrenci güncellenemedi.');
+    }
+  };
+
+  const openEditModal = (student: Student) => {
+    setEditingStudent(student);
+    setFormData({ firstName: student.firstName, lastName: student.lastName, studentNumber: student.studentNumber, email: student.email, status: student.status });
+    setIsEditModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Yeni Öğrenci Ekle</h2>
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Ad</label>
+                <input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Soyad</label>
+                <input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Öğrenci No</label>
+                <input required type="text" value={formData.studentNumber} onChange={e => setFormData({...formData, studentNumber: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">E-Posta</label>
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-md">İptal</button>
+                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md">Kaydet</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Öğrenciyi Düzenle</h2>
+            <form onSubmit={handleUpdateSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Ad</label>
+                <input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Soyad</label>
+                <input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Öğrenci No</label>
+                <input required type="text" value={formData.studentNumber} onChange={e => setFormData({...formData, studentNumber: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">E-Posta</label>
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Durum</label>
+                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full border p-2 rounded-md">
+                  <option value="Active">Aktif</option>
+                  <option value="Graduated">Mezun</option>
+                  <option value="Suspended">Uzaklaştırıldı</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 border rounded-md">İptal</button>
+                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md">Güncelle</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Öğrenciler</h1>
@@ -41,7 +162,7 @@ export default function StudentsPage() {
         </div>
         {isAdmin && (
           <div className="mt-4 sm:mt-0">
-            <button onClick={() => alert('Yeni öğrenci ekleme formu açılacak')} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
+            <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
               <Plus className="h-4 w-4" />
               Yeni Öğrenci
             </button>
@@ -91,8 +212,9 @@ export default function StudentsPage() {
                         {student.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => alert(`${student.firstName} detayları inceleniyor...`)} className="text-primary hover:text-primary/80">İncele</button>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                      <button onClick={() => openEditModal(student)} className="text-primary hover:text-primary/80">İncele</button>
+                      {isAdmin && <button onClick={() => handleDelete(student.id)} className="text-red-500 hover:text-red-700">Sil</button>}
                     </td>
                   </tr>
                 ))}

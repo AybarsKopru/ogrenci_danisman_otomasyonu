@@ -59,14 +59,59 @@ export default function AppointmentsPage() {
     }
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ date: '', time: '', notes: '' });
+
   const filteredAppointments = appointments.filter(apt => {
     const matchSearch = apt.student ? `${apt.student.firstName} ${apt.student.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
     const matchStatus = statusFilter === 'All' ? true : apt.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const dateTime = new Date(`${formData.date}T${formData.time}:00`).toISOString();
+      const newApt = await fetchApi('/api/appointments', {
+        method: 'POST',
+        body: JSON.stringify({ appointmentDate: dateTime, notes: formData.notes, status: 'Pending' })
+      });
+      setAppointments([...appointments, newApt]);
+      setIsModalOpen(false);
+      setFormData({ date: '', time: '', notes: '' });
+    } catch(err) {
+      alert('Randevu talebi gönderilemedi.');
+    }
+  };
+
   return (
     <div className="space-y-6">
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Randevu Talep Et</h2>
+            <form onSubmit={handleRequestSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Tarih</label>
+                <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Saat</label>
+                <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="w-full border p-2 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Not / Konu</label>
+                <textarea required rows={3} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full border p-2 rounded-md" placeholder="Görüşmek istediğiniz konuyu kısaca özetleyin..." />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-md">İptal</button>
+                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md">Talep Gönder</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Randevular</h1>
@@ -76,7 +121,7 @@ export default function AppointmentsPage() {
         </div>
         {isStudent && (
           <div className="mt-4 sm:mt-0">
-            <button onClick={() => alert('Randevu talebi formu açılacak.')} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
+            <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
               <Plus className="h-4 w-4" />
               Randevu Talep Et
             </button>

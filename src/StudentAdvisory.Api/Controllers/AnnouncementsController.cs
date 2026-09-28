@@ -35,4 +35,48 @@ public class AnnouncementsController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(announcement);
     }
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetAnnouncement(Guid id)
+    {
+        var announcement = await _context.Announcements.FindAsync(id);
+        if (announcement == null) return NotFound();
+        return Ok(announcement);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAnnouncement(Guid id, Announcement announcement)
+    {
+        if (id != announcement.Id) return BadRequest();
+
+        _context.Entry(announcement).State = EntityState.Modified;
+        
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!AnnouncementExists(id)) return NotFound();
+            else throw;
+        }
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAnnouncement(Guid id)
+    {
+        var announcement = await _context.Announcements.FindAsync(id);
+        if (announcement == null) return NotFound();
+
+        _context.Announcements.Remove(announcement);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private bool AnnouncementExists(Guid id)
+    {
+        return _context.Announcements.Any(e => e.Id == id);
+    }
 }

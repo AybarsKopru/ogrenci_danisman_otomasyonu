@@ -40,4 +40,40 @@ public class AdvisorsController : ControllerBase
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAdvisor), new { id = advisor.Id }, advisor);
     }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAdvisor(Guid id, Advisor advisor)
+    {
+        if (id != advisor.Id) return BadRequest();
+
+        _context.Entry(advisor).State = EntityState.Modified;
+        
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!AdvisorExists(id)) return NotFound();
+            else throw;
+        }
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAdvisor(Guid id)
+    {
+        var advisor = await _context.Advisors.FindAsync(id);
+        if (advisor == null) return NotFound();
+
+        _context.Advisors.Remove(advisor);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private bool AdvisorExists(Guid id)
+    {
+        return _context.Advisors.Any(e => e.Id == id);
+    }
 }
