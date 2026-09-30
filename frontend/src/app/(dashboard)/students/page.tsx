@@ -32,6 +32,12 @@ export default function StudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', studentNumber: '', email: '', status: 'Active' });
 
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [selectedStudentForMeeting, setSelectedStudentForMeeting] = useState<Student | null>(null);
+  const [meetings, setMeetings] = useState<any[]>([]);
+  const [meetingForm, setMeetingForm] = useState({ date: '', notes: '', actionItems: '' });
+  const [loadingMeetings, setLoadingMeetings] = useState(false);
+
   const filteredStudents = students.filter(s => 
     `${s.firstName} ${s.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
     s.studentNumber.includes(search)
@@ -83,6 +89,41 @@ export default function StudentsPage() {
     setEditingStudent(student);
     setFormData({ firstName: student.firstName, lastName: student.lastName, studentNumber: student.studentNumber, email: student.email, status: student.status });
     setIsEditModalOpen(true);
+  };
+
+  const openMeetingModal = async (student: Student) => {
+    setSelectedStudentForMeeting(student);
+    setIsMeetingModalOpen(true);
+    setLoadingMeetings(true);
+    try {
+      const data = await fetchApi(`/api/meetings/student/${student.id}`);
+      setMeetings(data || []);
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setLoadingMeetings(false);
+    }
+  };
+
+  const handleMeetingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudentForMeeting) return;
+    try {
+      const newMeeting = await fetchApi('/api/meetings', {
+        method: 'POST',
+        body: JSON.stringify({
+          studentId: selectedStudentForMeeting.id,
+          advisorId: selectedStudentForMeeting.advisorId,
+          meetingDate: new Date(meetingForm.date).toISOString(),
+          meetingNotes: meetingForm.notes,
+          actionItems: meetingForm.actionItems
+        })
+      });
+      setMeetings([newMeeting, ...meetings]);
+      setMeetingForm({ date: '', notes: '', actionItems: '' });
+    } catch(err) {
+      alert('Görüşme kaydedilemedi.');
+    }
   };
 
   return (
@@ -156,6 +197,63 @@ export default function StudentsPage() {
         </div>
       )}
 
+      {isMeetingModalOpen && selectedStudentForMeeting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl my-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">{selectedStudentForMeeting.firstName} {selectedStudentForMeeting.lastName} - Görüşme Kayıtları</h2>
+              <button onClick={() => setIsMeetingModalOpen(false)} className="text-slate-400 hover:text-slate-600">Kapat</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2">Yeni Not Ekle</h3>
+                <form onSubmit={handleMeetingSubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Tarih</label>
+                    <input required type="date" value={meetingForm.date} onChange={e => setMeetingForm({...meetingForm, date: e.target.value})} className="w-full border p-2 rounded-md" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Görüşme Notları</label>
+                    <textarea required rows={4} value={meetingForm.notes} onChange={e => setMeetingForm({...meetingForm, notes: e.target.value})} className="w-full border p-2 rounded-md" placeholder="Konuşulanlar..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Aksiyon Adımları (Action Items)</label>
+                    <textarea rows={2} value={meetingForm.actionItems} onChange={e => setMeetingForm({...meetingForm, actionItems: e.target.value})} className="w-full border p-2 rounded-md" placeholder="Örn: CV güncellenecek" />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md w-full">Kaydet</button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2">Geçmiş Görüşmeler</h3>
+                <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4">
+                  {loadingMeetings ? (
+                     <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                  ) : meetings.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-8">Henüz bir görüşme kaydı bulunmuyor.</p>
+                  ) : (
+                    meetings.map(m => (
+                      <div key={m.id} className="bg-slate-50 border rounded-lg p-3 text-sm">
+                        <div className="font-medium text-primary mb-1">{new Date(m.meetingDate).toLocaleDateString('tr-TR')}</div>
+                        <p className="text-slate-700 whitespace-pre-wrap mb-2">{m.meetingNotes}</p>
+                        {m.actionItems && (
+                          <div className="bg-yellow-50 text-yellow-800 p-2 rounded mt-2 border border-yellow-200">
+                            <strong>Aksiyon:</strong> {m.actionItems}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Öğrenciler</h1>
@@ -214,6 +312,9 @@ export default function StudentsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                      {(isAdmin || user?.roles?.includes('Advisor')) && (
+                        <button onClick={() => openMeetingModal(student)} className="text-emerald-600 hover:text-emerald-700">Kayıtlar</button>
+                      )}
                       <button onClick={() => openEditModal(student)} className="text-primary hover:text-primary/80">İncele</button>
                       {isAdmin && <button onClick={() => handleDelete(student.id)} className="text-red-500 hover:text-red-700">Sil</button>}
                     </td>
