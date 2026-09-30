@@ -51,6 +51,24 @@ public class AppointmentsController : ControllerBase
 
         _context.Appointments.Add(appointment);
         await _context.SaveChangesAsync();
+
+        var advisor = await _context.Advisors.FindAsync(appointment.AdvisorId);
+        if (advisor != null)
+        {
+            var advisorUser = await _userManager.FindByEmailAsync(advisor.Email);
+            if (advisorUser != null)
+            {
+                var studentName = user?.Email ?? "Bir öğrenci";
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = advisorUser.Id,
+                    Title = "Yeni Randevu Talebi",
+                    Message = $"{studentName} sizden yeni bir randevu talep etti."
+                });
+                await _context.SaveChangesAsync();
+            }
+        }
+
         return Ok(appointment);
     }
 
@@ -61,6 +79,23 @@ public class AppointmentsController : ControllerBase
         if (appointment == null) return NotFound();
 
         appointment.Status = status;
+
+        var student = await _context.Students.FindAsync(appointment.StudentId);
+        if (student != null)
+        {
+            var studentUser = await _userManager.FindByEmailAsync(student.Email);
+            if (studentUser != null)
+            {
+                var durum = status == "Approved" ? "onaylandı" : (status == "Rejected" ? "reddedildi" : "güncellendi");
+                _context.Notifications.Add(new Notification
+                {
+                    UserId = studentUser.Id,
+                    Title = "Randevu Durumu Güncellendi",
+                    Message = $"Randevu talebiniz {durum}."
+                });
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         return Ok(appointment);
