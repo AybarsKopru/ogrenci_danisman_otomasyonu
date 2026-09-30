@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudentAdvisory.Domain.Entities;
 using StudentAdvisory.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
+using StudentAdvisory.Domain.Entities.Identity;
 
 namespace StudentAdvisory.Api.Controllers;
 
@@ -12,10 +14,12 @@ namespace StudentAdvisory.Api.Controllers;
 public class StudentsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public StudentsController(ApplicationDbContext context)
+    public StudentsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     [HttpGet]
@@ -36,6 +40,18 @@ public class StudentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateStudent(Student student)
     {
+        // Check if user already exists
+        var existingUser = await _userManager.FindByEmailAsync(student.Email);
+        if (existingUser == null)
+        {
+            var newUser = new ApplicationUser { UserName = student.Email, Email = student.Email };
+            var result = await _userManager.CreateAsync(newUser, "Student123!");
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(newUser, "Student");
+            }
+        }
+
         _context.Students.Add(student);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
