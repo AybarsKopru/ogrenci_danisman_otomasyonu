@@ -20,15 +20,20 @@ public class ReportsController : ControllerBase
     [HttpGet("dashboard-stats")]
     public async Task<IActionResult> GetDashboardStats()
     {
-        var studentCount = await _context.Students.CountAsync();
-        var advisorCount = await _context.Advisors.CountAsync();
-        var pendingAppointments = await _context.Appointments.CountAsync(a => a.Status == "Pending");
-
-        return Ok(new
+        var stats = new
         {
-            TotalStudents = studentCount,
-            TotalAdvisors = advisorCount,
-            PendingAppointments = pendingAppointments
-        });
+            TotalStudents = await _context.Students.CountAsync(),
+            TotalAdvisors = await _context.Advisors.CountAsync(),
+            PendingAppointments = await _context.Appointments.CountAsync(a => a.Status == "Pending"),
+            ApprovedAppointments = await _context.Appointments.CountAsync(a => a.Status == "Approved"),
+            CompletedAppointments = await _context.Appointments.CountAsync(a => a.Status == "Completed"),
+            TotalMeetings = await _context.Meetings.CountAsync(),
+            TotalAnnouncements = await _context.Announcements.CountAsync(a => a.IsActive),
+            ActiveStudents = await _context.Students.CountAsync(s => s.Status == "Active"),
+            GraduatedStudents = await _context.Students.CountAsync(s => s.Status == "Graduated"),
+            SuspendedStudents = await _context.Students.CountAsync(s => s.Status == "Suspended")
+        };
+
+        return Ok(stats);
     }
 }

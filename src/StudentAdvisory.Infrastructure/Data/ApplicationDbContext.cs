@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Department> Departments { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Course> Courses { get; set; }
+    public DbSet<Message> Messages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
