@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Search, Plus, Loader2 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type Student = {
   id: string;
@@ -286,49 +287,85 @@ export default function StudentsPage() {
             />
           </div>
         </div>
-        <div className="overflow-x-auto">
+        
+        <div className="overflow-hidden">
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Öğrenci No</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ad Soyad</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Durum</th>
-                  <th scope="col" className="relative px-6 py-3">
-                    <span className="sr-only">Düzenle</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-card divide-y divide-border">
-                {filteredStudents.map((student) => (
-                  <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-medium">{student.studentNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">{student.firstName} {student.lastName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                      {(isAdmin || user?.roles?.includes('Advisor')) && (
-                        <button onClick={() => openMeetingModal(student)} className="text-emerald-600 hover:text-emerald-700">Kayıtlar</button>
-                      )}
-                      <button onClick={() => openEditModal(student)} className="text-primary hover:text-primary/80">İncele</button>
-                      {isAdmin && <button onClick={() => handleDelete(student.id)} className="text-red-500 hover:text-red-700">Sil</button>}
-                    </td>
-                  </tr>
-                ))}
-                {filteredStudents.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">Kayıtlı öğrenci bulunamadı.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <>
+              {/* Mobile Card View */}
+              <div className="block md:hidden animate-fade-in">
+                <div className="flex flex-col gap-4 p-4">
+                  {filteredStudents.length === 0 ? (
+                    <div className="text-center text-slate-500 py-8">KayÄ±tlÄ± Ã¶ÄŸrenci bulunamadÄ±.</div>
+                  ) : (
+                    filteredStudents.map((student, idx) => (
+                      <div key={student.id} className="bg-white border rounded-xl p-4 shadow-sm animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-bold text-slate-900">{student.firstName} {student.lastName}</p>
+                            <p className="text-sm text-slate-500">No: {student.studentNumber}</p>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${student.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : student.status === 'Graduated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                            {student.status}
+                          </span>
+                        </div>
+                        <div className="mt-4 flex gap-2 justify-end border-t pt-3">
+                          {(isAdmin || user?.roles?.includes('Advisor')) && (
+                            <button onClick={() => openMeetingModal(student)} className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-sm">KayÄ±tlar</button>
+                          )}
+                          <button onClick={() => openEditModal(student)} className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-md text-sm">Ä°ncele</button>
+                          {isAdmin && <button onClick={() => handleDelete(student.id)} className="px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">Sil</button>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto animate-fade-in">
+                <table className="min-w-full divide-y divide-border">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ã–ÄŸrenci No</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ad Soyad</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Durum</th>
+                      <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ä°ÅŸlemler</span></th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-card divide-y divide-border">
+                    {filteredStudents.map((student, idx) => (
+                      <tr key={student.id} className="hover:bg-slate-50 transition-colors animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{student.studentNumber}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{student.firstName} {student.lastName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${student.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : student.status === 'Graduated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                          {(isAdmin || user?.roles?.includes('Advisor')) && (
+                            <button onClick={() => openMeetingModal(student)} className="text-emerald-600 hover:text-emerald-700">KayÄ±tlar</button>
+                          )}
+                          <button onClick={() => openEditModal(student)} className="text-primary hover:text-primary/80">Ä°ncele</button>
+                          {isAdmin && <button onClick={() => handleDelete(student.id)} className="text-red-500 hover:text-red-700">Sil</button>}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredStudents.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">KayÄ±tlÄ± Ã¶ÄŸrenci bulunamadÄ±.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

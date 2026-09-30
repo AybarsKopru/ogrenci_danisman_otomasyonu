@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar as CalendarIcon, Clock, User, CheckCircle2, XCircle, Clock4, Loader2, Search, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, CheckCircle2, XCircle, Clock4, Search, Plus } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type Appointment = {
   id: string;
@@ -157,18 +158,22 @@ export default function AppointmentsPage() {
 
       <div className="grid gap-4">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
         ) : filteredAppointments.length === 0 ? (
-          <div className="bg-card border border-border rounded-xl p-8 text-center text-slate-500">
+          <div className="bg-card border border-border rounded-xl p-8 text-center text-slate-500 animate-fade-in">
             Kayıtlı randevu bulunamadı.
           </div>
         ) : (
-          filteredAppointments.map((apt) => {
+          filteredAppointments.map((apt, idx) => {
             const dateObj = new Date(apt.appointmentDate);
             return (
-              <div key={apt.id} className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/30 transition-colors">
+              <div key={apt.id} 
+                   className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/30 transition-colors animate-slide-up"
+                   style={{ animationDelay: `${idx * 0.05}s` }}>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center text-foreground font-medium text-lg">
                     <User className="h-5 w-5 mr-2 text-slate-400" />
@@ -190,7 +195,7 @@ export default function AppointmentsPage() {
                 </div>
                 
                 <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                  <div className="flex items-center text-sm font-medium px-3 py-1 rounded-full bg-slate-50 border border-slate-100 min-w-[140px] justify-center">
+                  <div className={`flex items-center text-sm font-medium px-3 py-1 rounded-full border min-w-[140px] justify-center ${apt.status === 'Approved' ? 'bg-green-50 border-green-200 text-green-700' : apt.status === 'Rejected' ? 'bg-red-50 border-red-200 text-red-700' : apt.status === 'Completed' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-orange-50 border-orange-200 text-orange-700'}`}>
                     {getStatusIcon(apt.status)}
                     <span className="text-slate-700">{getStatusText(apt.status)}</span>
                   </div>
