@@ -11,6 +11,8 @@ type Student = {
   lastName: string;
   studentNumber: string;
   status: string;
+  email: string;
+  advisorId?: string;
 };
 
 export default function StudentsPage() {
