@@ -1,130 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Megaphone, Plus, Trash2, Loader2 } from "lucide-react";
+import { Megaphone, Plus, Trash2, Pencil } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchApi } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
-type Announcement = {
-  id: string;
-  title: string;
-  content: string;
-  publishedDate: string;
-};
+type Announcement = { id: string; title: string; content: string; targetAudience: string; publishDate: string; isActive: boolean; createdAt: string; };
 
 export default function AnnouncementsPage() {
   const { user } = useAuth();
-  const isStudent = user?.roles?.includes('Student');
   const isAdmin = user?.roles?.includes('Admin');
   const isAdvisor = user?.roles?.includes('Advisor');
+  const canManage = isAdmin || isAdvisor;
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAnn, setEditingAnn] = useState<Announcement | null>(null);
-  const [formData, setFormData] = useState({ title: '', content: '' });
+  const [formData, setFormData] = useState({ title: '', content: '', targetAudience: 'All' });
 
   useEffect(() => {
-    fetchApi('/api/announcements')
-      .then(data => setAnnouncements(data || []))
-      .finally(() => setLoading(false));
+    fetchApi('/api/announcements').then(data => setAnnouncements(data || [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const newAnn = await fetchApi('/api/announcements', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          publishedDate: new Date().toISOString()
-        })
-      });
-      setAnnouncements([...announcements, newAnn]);
-      setIsModalOpen(false);
-      setFormData({ title: '', content: '' });
-    } catch(err) {
-      alert('Duyuru paylaşılamadı.');
-    }
+      if (editingAnn) {
+        await fetchApi(`/api/announcements/${editingAnn.id}`, { method: 'PUT', body: JSON.stringify({ ...editingAnn, ...formData }) });
+        setAnnouncements(announcements.map(a => a.id === editingAnn.id ? { ...a, ...formData } : a));
+      } else {
+        const newAnn = await fetchApi('/api/announcements', { method: 'POST', body: JSON.stringify(formData) });
+        setAnnouncements([newAnn, ...announcements]);
+      }
+      closeModal();
+    } catch { alert(editingAnn ? 'Duyuru güncellenemedi.' : 'Duyuru eklenemedi.'); }
   };
 
   const handleDelete = async (id: string) => {
-    if(!confirm('Duyuruyu silmek istediğinize emin misiniz?')) return;
-    try {
-      await fetchApi(`/api/announcements/${id}`, { method: 'DELETE' });
-      setAnnouncements(announcements.filter(a => a.id !== id));
-    } catch(err) {
-      alert('Duyuru silinemedi.');
-    }
-  };
-
-  const handleUpdateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if(!editingAnn) return;
-    try {
-      const updatedAnn = { ...editingAnn, title: formData.title, content: formData.content };
-      await fetchApi(`/api/announcements/${editingAnn.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updatedAnn)
-      });
-      setAnnouncements(announcements.map(a => a.id === updatedAnn.id ? updatedAnn : a));
-      setIsEditModalOpen(false);
-      setEditingAnn(null);
-    } catch(err) {
-      alert('Duyuru güncellenemedi.');
-    }
+    if (!confirm('Bu duyuruyu silmek istediğinize emin misiniz?')) return;
+    try { await fetchApi(`/api/announcements/${id}`, { method: 'DELETE' }); setAnnouncements(announcements.filter(a => a.id !== id)); } catch { alert('Duyuru silinemedi.'); }
   };
 
   const openEditModal = (ann: Announcement) => {
     setEditingAnn(ann);
-    setFormData({ title: ann.title, content: ann.content });
-    setIsEditModalOpen(true);
+    setFormData({ title: ann.title, content: ann.content, targetAudience: ann.targetAudience });
+    setIsModalOpen(true);
   };
 
-  const canManage = isAdmin || isAdvisor;
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingAnn(null);
+    setFormData({ title: '', content: '', targetAudience: 'All' });
+  };
+
+  const inputClass = "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 animate-fade-in">
+      {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Yeni Duyuru</h2>
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Başlık</label>
-                <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full border p-2 rounded-md focus:ring-primary focus:border-primary" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl border border-slate-200 animate-scale-in">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">{editingAnn ? 'Duyuruyu Düzenle' : 'Yeni Duyuru'}</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">Başlık</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className={inputClass} placeholder="Duyuru başlığı..." /></div>
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">İçerik</label><textarea required rows={5} value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className={inputClass + " resize-none"} placeholder="Duyuru içeriğini yazın..." /></div>
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">Hedef Kitle</label>
+                <select value={formData.targetAudience} onChange={e => setFormData({...formData, targetAudience: e.target.value})} className={inputClass}>
+                  <option value="All">Herkes</option><option value="Students">Öğrenciler</option><option value="Advisors">Danışmanlar</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">İçerik</label>
-                <textarea required rows={4} value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full border p-2 rounded-md focus:ring-primary focus:border-primary" />
-              </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-md">İptal</button>
-                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md">Yayınla</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Duyuruyu Düzenle</h2>
-            <form onSubmit={handleUpdateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Başlık</label>
-                <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full border p-2 rounded-md focus:ring-primary focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">İçerik</label>
-                <textarea required rows={4} value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full border p-2 rounded-md focus:ring-primary focus:border-primary" />
-              </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 border rounded-md">İptal</button>
-                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md">Güncelle</button>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">İptal</button>
+                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90">{editingAnn ? 'Güncelle' : 'Yayınla'}</button>
               </div>
             </form>
           </div>
@@ -133,52 +83,47 @@ export default function AnnouncementsPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Duyurular</h1>
-          <p className="text-sm text-card-foreground mt-1">Üniversite ve bölüm duyurularını buradan takip edebilirsiniz.</p>
+          <h1 className="text-xl font-bold text-slate-900">Duyurular</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Sisteme yayınlanan duyurular.</p>
         </div>
         {canManage && (
-          <div className="mt-4 sm:mt-0">
-            <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-              <Plus className="h-4 w-4" />
-              Yeni Duyuru
-            </button>
-          </div>
+          <button onClick={() => { setEditingAnn(null); setFormData({ title: '', content: '', targetAudience: 'All' }); setIsModalOpen(true); }} className="mt-3 sm:mt-0 flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors shadow-sm">
+            <Plus className="h-4 w-4" />Yeni Duyuru
+          </button>
         )}
       </div>
 
-      <div className="grid gap-4">
+      <div className="space-y-3">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <div className="space-y-3"><Skeleton className="h-28 w-full rounded-xl" /><Skeleton className="h-28 w-full rounded-xl" /></div>
         ) : announcements.length === 0 ? (
-           <div className="bg-card border border-border rounded-xl p-8 text-center text-slate-500">
-             Henüz yayınlanmış bir duyuru bulunmuyor.
-           </div>
+          <div className="bg-white border border-slate-100 rounded-xl p-12 text-center text-sm text-slate-400 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <Megaphone className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            Henüz yayınlanmış duyuru yok.
+          </div>
         ) : (
-          announcements.sort((a,b) => new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()).map((ann) => (
-            <div key={ann.id} className="bg-card border border-border rounded-xl p-5 shadow-sm group">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg shrink-0">
-                  <Megaphone className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold text-foreground">{ann.title}</h3>
-                    {canManage && (
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEditModal(ann)} className="text-slate-400 hover:text-primary transition-colors text-sm font-medium">Düzenle</button>
-                        <button onClick={() => handleDelete(ann.id)} className="text-slate-400 hover:text-red-500 transition-colors">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
+          announcements.map((ann, idx) => (
+            <div key={ann.id} className="bg-white border border-slate-100 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow group animate-slide-up" style={{ animationDelay: `${idx * 0.03}s` }}>
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Megaphone className="h-4 w-4 text-sky-500 shrink-0" />
+                    <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
                   </div>
-                  <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{ann.content}</p>
-                  <div className="mt-4 flex items-center gap-4 text-xs font-medium text-slate-400">
-                    <span>{new Date(ann.publishedDate).toLocaleDateString('tr-TR')}</span>
+                  <p className="text-sm text-slate-600 line-clamp-3 pl-6">{ann.content}</p>
+                  <div className="flex gap-3 mt-2.5 pl-6">
+                    <span className="text-[11px] text-slate-400">{new Date(ann.createdAt || ann.publishDate).toLocaleDateString('tr-TR')}</span>
+                    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${ann.targetAudience === 'All' ? 'bg-slate-100 text-slate-600' : ann.targetAudience === 'Students' ? 'bg-blue-50 text-blue-600' : 'bg-teal-50 text-teal-600'}`}>
+                      {ann.targetAudience === 'All' ? 'Herkes' : ann.targetAudience === 'Students' ? 'Öğrenciler' : 'Danışmanlar'}
+                    </span>
                   </div>
                 </div>
+                {canManage && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-3">
+                    <button onClick={() => openEditModal(ann)} className="p-1.5 rounded-md text-slate-400 hover:text-primary hover:bg-primary/5 transition-colors"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => handleDelete(ann.id)} className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                )}
               </div>
             </div>
           ))
